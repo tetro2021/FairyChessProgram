@@ -61,6 +61,7 @@ class ChessPiece{
 
 
     boolean CanMove(int x, int y){
+        System.out.println("using Default Move");
         if(taken || board.grid[x][y].occupied || pinned(x,y,pieces)){
             return false;
         }
@@ -77,7 +78,9 @@ class ChessPiece{
             board.grid[x][y].addPiece(this);
             row = x;
             collumn = y;
-            System.out.println(name + " to " + this.GetChessPos());
+            //System.out.println("Default Piece Move: " + name + " to " + this.GetChessPos());
+            // Switch Turns
+            playerTurn = (playerTurn + 1) % numPlayers;
         }
         else{
             System.out.println("Cannot move");
@@ -87,7 +90,7 @@ class ChessPiece{
 
 
     boolean CanTake(ChessPiece other){
-        if(taken || other.taken || (other.side != side) || pinned(other.row,other.collumn,pieces)){
+        if(other == null || taken || other.taken || (other.side != side) || pinned(other.row,other.collumn,pieces)){
             return false;
         }
         else{
@@ -97,7 +100,7 @@ class ChessPiece{
 
 // Looks at taking regardless of pin, in other words can you move if you would win the game.
     boolean CanEnd(ChessPiece other){
-      System.out.println("got to can end");
+      //System.out.println("got to can end");
         if(taken || other.taken || (other.side != side) ){
             return false;
         }
@@ -114,6 +117,8 @@ class ChessPiece{
             collumn = other.collumn;
             board.grid[row][collumn].addPiece(this);
             System.out.println(name + " takes " + other.name);
+            // Switch Turns
+            playerTurn = (playerTurn + 1) % numPlayers;
         }
         else{
             System.out.println("Cannot Take " + other.name);
@@ -126,6 +131,7 @@ class ChessPiece{
         //System.out.println("Too many forced Takes?");
         //other.taken = true;
         board.grid[row][collumn].occupied = false;
+        board.grid[row][collumn].removePiece();
         other.taken = true;
         row = other.row;
         collumn = other.collumn;
@@ -162,7 +168,7 @@ class ChessPiece{
         int holdy = collumn;
         boolean forcedTake = false;
         if(!board.grid[x][y].noPieces()){
-            System.out.println("Forced Take happened: Taking " + board.grid[x][y].getLivePiece());
+            //System.out.println("Forced Take happened: Taking " + board.grid[x][y].getLivePiece());
             this.ForcedTake(board.grid[x][y].getLivePiece());
             forcedTake = true;
         }
@@ -175,12 +181,14 @@ class ChessPiece{
         for(int i = 0; i < pieces.size(); i++){
             if(pieces.get(i).piece == Type.KING && pieces.get(i).side == this.side){
                 if(pieces.get(i).IsChecked(pieces)){
-                    System.out.println("Still is Checked");
+                    //System.out.println("Still is Checked");
                     // row = holdx;
                     // collumn = holdy;
                     if(forcedTake){
                         row = holdx;
                         collumn = holdy;
+                        board.grid[row][collumn].occupied = true;
+                        board.grid[row][collumn].addPiece(this);
                         board.grid[x][y].removePiece();
                         board.grid[x][y].getPiece().taken =false;
                     }
@@ -196,9 +204,11 @@ class ChessPiece{
         // collumn = holdy;
         if(forcedTake){
 
-            System.out.println("Should be reverting take");
+            //System.out.println("Should be reverting take");
             row = holdx;
             collumn = holdy;
+            board.grid[row][collumn].occupied = true;
+            board.grid[row][collumn].addPiece(this);
             board.grid[x][y].removePiece();
             board.grid[x][y].getPiece().taken =false;
         }
@@ -224,7 +234,7 @@ class ChessPiece{
 
 }
 
-
+//TODO Passant & jumping over pieces
 class Pawn extends ChessPiece{
 
     Pawn(Board b){
@@ -279,6 +289,8 @@ class Pawn extends ChessPiece{
             collumn = y;
             hasMoved = true;
             System.out.println(name + " to " + this.GetChessPos());
+            // Switch turns
+            playerTurn = (playerTurn + 1) % numPlayers;
         }
         else{
             System.out.println("Cannot move");
@@ -286,10 +298,38 @@ class Pawn extends ChessPiece{
     }
 
 
+    void Take(ChessPiece other){
+        if(CanTake(other)){
+            other.taken = true;
+            board.grid[row][collumn].removePiece();
+            row = other.row;
+            collumn = other.collumn;
+            board.grid[row][collumn].addPiece(this);
+            hasMoved = true;
+            System.out.println(name + " takes " + other.name);
+            // Switch Turns
+            playerTurn = (playerTurn + 1) % numPlayers;
+        }
+        else{
+            System.out.println("Cannot Take " + other.name);
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
 
 // TODO: En Passant
     boolean CanTake(ChessPiece other){
-        if(!taken && !other.taken && other.side != side){
+        if(other != null && !taken && !other.taken && other.side != side){
             int calc = collumn - other.collumn;
             if(side == Team.WHITE){
                 if((row == other.row-1) && ((abs(calc) == 1) && !pinned(other.row,other.collumn,pieces))){
@@ -375,13 +415,13 @@ class King extends ChessPiece{
     boolean CanMove(int x,int y){
         int diffx = row-x;
         int diffy = collumn-y;
-        System.out.println(x + " " + y + " " + diffx + " " + diffy);
+        //System.out.println(x + " " + y + " " + diffx + " " + diffy);
         if(diffx < 2 && diffx > -2 && diffy < 2 && diffy > -2 && !taken && !board.grid[x][y].occupied){
             if(!pinned(x,y,pieces)){
                 // TODO: FIX THIS
                 return true;
             }
-            System.out.print("King Pinned Problem");
+            //System.out.print("King Pinned Problem");
         }
         return false;    
     }
@@ -397,6 +437,8 @@ class King extends ChessPiece{
             collumn = y;
             hasMoved = true;
             System.out.println(name + " to " + this.GetChessPos());
+            // Switch turns
+            playerTurn = (playerTurn + 1) % numPlayers;
         }
         else{
             System.out.println("Cannot move");
@@ -404,9 +446,36 @@ class King extends ChessPiece{
     }
 
 
+    void Take(ChessPiece other){
+        if(CanTake(other)){
+            other.taken = true;
+            board.grid[row][collumn].removePiece();
+            row = other.row;
+            collumn = other.collumn;
+            board.grid[row][collumn].addPiece(this);
+            hasMoved = true;
+            System.out.println(name + " takes " + other.name);
+            // Switch Turns
+            playerTurn = (playerTurn + 1) % numPlayers;
+        }
+        else{
+            System.out.println("Cannot Take " + other.name);
+        }
+
+    }
+
+
+
+
+
+
+
 
 // TODO: En Passant
     boolean CanTake(ChessPiece other){
+        if(other == null){
+            return false;
+        }
         int diffx = row-other.row;
         int diffy = collumn-other.collumn;
         if(diffx < 2 && diffx > -2 && diffy < 2 && diffy > -2 && !taken && other.side != this.side){
@@ -451,7 +520,7 @@ class Bishop extends ChessPiece{
     Bishop(Board b){
         super(b);
         piece = Type.PAWN;
-        name = "pawn";
+        name = "Bishop";
         hasMoved = false;
         }
 
@@ -536,7 +605,7 @@ class Bishop extends ChessPiece{
 
 
     boolean CanTake(ChessPiece other){
-        if(!pinned(other.row,other.collumn,pieces) && other.side != side){
+        if(other != null && !pinned(other.row,other.collumn,pieces) && other.side != side){
             int tempx = other.row;
             int tempy = other.collumn;
             int calcx = row -tempx;
@@ -771,7 +840,7 @@ class Queen extends ChessPiece{
 
 
     boolean CanTake(ChessPiece other){
-        if(!pinned(other.row,other.collumn,pieces) && other.side != side){
+        if(other != null && !pinned(other.row,other.collumn,pieces) && other.side != side){
             int tempx = other.row;
             int tempy = other.collumn;
             int calcx = row - tempx;
@@ -1005,23 +1074,51 @@ class Rook extends ChessPiece{
         else return false;
     }
 
+    void Move(int x, int y){
+        if(CanMove(x,y)){
+            board.grid[row][collumn].occupied = false;
+            board.grid[row][collumn].removePiece();
+            board.grid[x][y].occupied = true;
+            board.grid[x][y].addPiece(this);
+            row = x;
+            collumn = y;
+            hasMoved = true;
+            System.out.println(name + " to " + this.GetChessPos());
+            // Switch turns
+            playerTurn = (playerTurn + 1) % numPlayers;
+        }
+        else{
+            System.out.println("Cannot move");
+        }
+    }
 
-    // Whith the addition of canTake this is unnecisary? It depends if can take is called from pawn or general
 
-    // void Move(int x, int y){
-    //     if(CanMove(x,y)){
-    //         board.grid[row][collumn].occupied = false;
-    //         board.grid[x][y].occupied = true;
-    //         row = x;
-    //         collumn = y;
-    //         System.out.println(name + " to " + this.GetChessPos());
-    //     }
-    // }
+
+
+
+    void Take(ChessPiece other){
+        if(CanTake(other)){
+            other.taken = true;
+            board.grid[row][collumn].removePiece();
+            row = other.row;
+            collumn = other.collumn;
+            board.grid[row][collumn].addPiece(this);
+            hasMoved = true;
+            System.out.println(name + " takes " + other.name);
+            // Switch Turns
+            playerTurn = (playerTurn + 1) % numPlayers;
+        }
+        else{
+            System.out.println("Cannot Take " + other.name);
+        }
+
+    }
+
 
 
 
     boolean CanTake(ChessPiece other){
-        if(!pinned(other.row,other.collumn,pieces) && other.side != side){
+        if(other != null && !pinned(other.row,other.collumn,pieces) && other.side != side){
             int tempx = other.row;
             int tempy = other.collumn;
             int calcx = row - tempx;
@@ -1093,7 +1190,7 @@ class Rook extends ChessPiece{
                     }
                     calcy = collumn - tempy;
                 }
-                System.out.println("rook can end failing");
+                //System.out.println("rook can end failing");
                 return true;
             }
 
@@ -1111,7 +1208,7 @@ class Rook extends ChessPiece{
                     }
                     calcx = row - tempx;
                 }
-                System.out.println("rook can end failing");
+                //System.out.println("rook can end failing");
                 return true;                
             }
             else return false;
@@ -1162,7 +1259,7 @@ class Knight extends ChessPiece{
         if(!pinned(x,y,pieces) && board.grid[x][y].occupied == false){
             int xdiff = row -x;
             int ydiff = collumn -y;
-            System.out.println("Xdiff: " +xdiff + "Ydiff: " + ydiff);
+            //System.out.println("Xdiff: " +xdiff + "Ydiff: " + ydiff);
             if( (abs(xdiff) == 2 && abs(ydiff) == 1) || (abs(xdiff) == 1 && abs(ydiff) == 2) ){
                 return true;
             }
@@ -1186,7 +1283,7 @@ class Knight extends ChessPiece{
 
 
     boolean CanTake(ChessPiece other){
-        if(!pinned(other.row,other.collumn,pieces) && other.side != side){
+        if(other != null && !pinned(other.row,other.collumn,pieces) && other.side != side){
             int xdiff = row -other.row;
             int ydiff = collumn -other.collumn;
             if( (abs(xdiff) == 2 && abs(ydiff) == 1) || (abs(xdiff) == 1 && abs(ydiff) == 2) ){
@@ -1203,7 +1300,7 @@ class Knight extends ChessPiece{
             int xdiff = row -other.row;
             int ydiff = collumn -other.collumn;
             if( (abs(xdiff) == 2 && abs(ydiff) == 1) || (abs(xdiff) == 1 && abs(ydiff) == 2) ){
-                System.out.println("knight can end failing");
+                //System.out.println("knight can end failing");
                 return true;
              }
         }

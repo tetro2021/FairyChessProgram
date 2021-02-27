@@ -49,7 +49,18 @@ class Board
     } 
   }
 
-
+    public String toString(){
+      String fin = "";
+      for(int x = 0; x < gridSizeX; x++){
+        for(int y = 0; y < gridSizeY; y++){
+          fin += " " + x + "," + y;
+          fin += grid[x][y];
+          fin += " ";
+        }
+        fin += "\n";
+      }
+      return fin;
+    }
 
 
   void DrawBoardSquare(){
@@ -146,6 +157,14 @@ class Cell
   }
   
   
+    public String toString(){
+      String fin = "";
+      fin += " Occupied: " + occupied;
+      fin += " " + currentPieces;
+      return fin;
+    }  
+  
+  
   
   float xPos(){
     return location.x;
@@ -206,9 +225,9 @@ class Cell
     }
     else fill(255);
     
-    if(livePiece){
-      fill(100);
-    }
+    //if(livePiece){
+      //fill(100);
+    //}
     if(selected){
       fill(255,220,0);
     } 

@@ -1,15 +1,31 @@
 //Ethan Kane
 import java.util.ArrayList;
-Camera camera;
+import java.util.Random;
+import java.util.Comparator;
+import java.util.Collections;
+
+// Simple loading Setup
 PImage space;
 PImage textureBlack;
 PImage textureWhite;
 PVector drawlocation;
+
+
+// Players & gamemode
+int numPlayers = 2;
+int gameMode = 2;
+RandomAI eloOf1;
+GreedyAI eloOf20;
+
+// Keeps track of live game
 ChessPiece currentPiece = null;
 boolean firstSelect = true;
 int selectRow;
 int selectCollumn;
 Cell curentCell = null;
+int playerTurn = 0;
+
+
 
 // Default size: 100
 int size = 100;
@@ -41,7 +57,8 @@ void setup(){
   space = loadImage("space.jpg");
   strokeWeight(0.5); //Draw thicker lines 
   
-  
+
+
   // Set up physical board and cells
   loadBoard();
   
@@ -58,6 +75,14 @@ void setup(){
   pieces = new ArrayList<ChessPiece>();
   loadPieces();
   
+
+
+  // Load AI
+  eloOf1 = new RandomAI(board,Team.BLACK);
+  eloOf20 = new GreedyAI(board,Team.BLACK);
+
+
+
 }
 
 
@@ -226,15 +251,15 @@ void keyReleased()
 
 
 void mouseClicked(){
-  if(firstSelect){
-    selectCell();
+  if(gameMode == 0){
+    TwoPlayerClick();
   }
-  else{
-    selectSecondCell();
-    //currentPiece = null;
+  else if(gameMode == 1){
+    vsAI();
   }
-  //selectCell();
-  //pieces.get(1).Move(pieces.get(1).row+1,pieces.get(1).collumn);
+  else if(gameMode == 2){
+    vsGreedy();
+  }
 }
 
 
@@ -332,7 +357,7 @@ void drawChess(){
     
     if(pieces.get(i).IsChecked(pieces)){
       if(pieces.get(i).side == Team.BLACK) {
-        fill(150,240,90);
+        fill(200,240,90);
       }
       else fill(120,50,150);
     }
