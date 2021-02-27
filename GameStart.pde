@@ -53,6 +53,6 @@ void vsGreedy(){
         if(playerTurn == 1){
             aiMoveG.p.Take(board.grid[aiMoveG.row][aiMoveG.collumn].getLivePiece());
         }
-        eloOf1.clearMoves();
+        eloOf20.clearMoves();
     }
 }
