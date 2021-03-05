@@ -13,6 +13,7 @@ PVector drawlocation;
 
 // Players & gamemode
 int numPlayers = 2;
+ArrayList<Player> playerList;
 int gameMode = 0;
 RandomAI eloOf1;
 GreedyAI eloOf20;
@@ -24,6 +25,7 @@ int selectRow;
 int selectCollumn;
 Cell curentCell = null;
 int playerTurn = 0;
+boolean promotionAvailable = true;
 
 
 
@@ -36,6 +38,7 @@ int size = 100;
 Board board;
 ArrayList<ChessPiece> pieces;
 ArrayList<PShape> shapelist;
+//ArrayList<ShapeAndPiece> shapelist;
 PShape bishop;
 PShape king;
 PShape knight;
@@ -56,7 +59,17 @@ void setup(){
   surface.setTitle("Chess, regular 2D");
   space = loadImage("space.jpg");
   strokeWeight(0.5); //Draw thicker lines 
+  textSize(32);  
+
+
+
+  //Set up players
   
+  
+
+
+
+
 
 
   // Set up physical board and cells
@@ -81,6 +94,20 @@ void setup(){
   eloOf1 = new RandomAI(board,Team.BLACK);
   eloOf20 = new GreedyAI(board,Team.BLACK);
 
+
+
+  //Load Players
+  playerList = new ArrayList<Player>();
+
+
+  // Assuming that gamemodes over the 5th are more than 2 player, might change later
+  if(gameMode < 5){
+    Player p1 = new Player(Team.WHITE);
+    Player p2 = new Player(Team.BLACK);
+    System.out.println(p1.side);
+    playerList.add(p1); //<>//
+    playerList.add(p2);
+  }
 
 
 }
@@ -227,26 +254,24 @@ void loadPieces(){
 void keyPressed()
 {
   if ( key == 'w' ){
-    selectCell();
-    if(board.grid[selectRow][selectCollumn].getLivePiece() != null){
-      currentPiece = board.grid[selectRow][selectCollumn].getLivePiece();
-    }
-    else System.out.println("EMPTY CELL");
+    System.out.print(playerList.get((playerTurn+1)%2).getPreviousMove());
   }
   if ( key == 'e' ){
-      if(currentPiece != null){
-        selectCell();
-        if(board.grid[selectRow][selectCollumn].getLivePiece() != null){
-          currentPiece.Take(board.grid[selectRow][selectCollumn].getLivePiece());
-        }
-        else currentPiece.Move(selectRow,selectCollumn);
-      }
+  //    if(currentPiece != null){
+  //      selectCell();
+  //      if(board.grid[selectRow][selectCollumn].getLivePiece() != null){
+  //        currentPiece.Take(board.grid[selectRow][selectCollumn].getLivePiece());
+  //      }
+  //      else currentPiece.Move(selectRow,selectCollumn);
+  //    }
   }
 }
 
 void keyReleased()
 {
-  
+  //if ( key == 'w' ){
+  //  // Do nothing
+  //}
 }
 
 
@@ -260,6 +285,13 @@ void mouseClicked(){
   else if(gameMode == 2){
     vsGreedy();
   }
+  
+  if(promotionAvailable){
+    
+    SelectNewPiece();
+    
+  }
+  
 }
 
 
@@ -373,15 +405,51 @@ void drawChess(){
 
 
 
-// void updateGame(){
-//     for(int i = 0; i < pieces.size(); i++){
-//       if (board.grid[pieces.get(i).piece = Type.KING){
-//         for(int j = 0; j < pieces.size(); j++){
-//           //IMPLEMENT CAN TAKE, CREATE KING PIECE
-//         }
-//       }
-//   }
-// }
+void AskPromotion(){
+  if(promotionAvailable){
+    fill(200);
+    square(100,100,500);
+    fill(50);
+    text("Promote?",100,100,500,500);
+    int y = 0;
+    int x = 0;
+    for(int i = 0; i < shapelist.size(); i++){
+      shape(shapelist.get(i),100+100*x,150+100*y,size,size);
+      x++;
+      if(x % 4 == 0){
+        y++;
+        x = 0;
+      }
+    }
+    // TODO: DRAW ALL PIECE TYPES TO CLICK ON
+  }
+
+}
+
+
+
+
+
+PShape SelectNewPiece(){
+  int x =0;
+  int y = 0;
+  PShape temp = null;
+  for(int i = 0; i < shapelist.size(); i++){
+    if( mouseX >= (100 + 100*x) && mouseX < (100+100*x)+size && mouseY >= (150+100*y) && mouseY < (150+100*y)+size)   
+    temp = shapelist.get(i);
+    x++;
+    if(x % 4 == 0){
+      y++;
+      x = 0;
+    }
+  }
+  if(temp == null){
+    System.out.println("cant find?");
+    System.out.println(mouseX + " " + (100 + 100*x));
+    return temp;
+  }
+  return temp;
+}
 
 
 
@@ -396,6 +464,7 @@ void draw(){
  
   //board.DrawBoardSquare();
   drawChess();
+  AskPromotion();
   //Light setup
   //specular(120, 120, 180);   
   //ambientLight(100,100,100);  

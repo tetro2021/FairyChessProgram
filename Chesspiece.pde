@@ -81,6 +81,7 @@ class ChessPiece{
             //System.out.println("Default Piece Move: " + name + " to " + this.GetChessPos());
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot move");
@@ -119,6 +120,7 @@ class ChessPiece{
             System.out.println(name + " takes " + other.name);
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot Take " + other.name);
@@ -218,6 +220,31 @@ class ChessPiece{
         }
         return false;
     }
+    
+    
+    
+    
+    
+    
+    void promote(ChessPiece old){
+      row = old.row;
+      collumn = old.collumn;
+      board.grid[row][collumn].removePiece();
+      board.grid[row][collumn].addPiece(this);
+      pieces.remove(old);
+      pieces.add(this);
+    }    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
     Board board;
@@ -286,12 +313,17 @@ class Pawn extends ChessPiece{
             board.grid[row][collumn].removePiece();
             board.grid[x][y].occupied = true;
             board.grid[x][y].addPiece(this);
+            int diffx = row -x;
+            if(abs(diffx) > 1){
+              playerList.get(playerTurn).canPassant = true;
+            }
             row = x;
             collumn = y;
             hasMoved = true;
             System.out.println(name + " to " + this.GetChessPos());
             // Switch turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot move");
@@ -301,8 +333,58 @@ class Pawn extends ChessPiece{
 
     void Take(ChessPiece other){
         if(CanTake(other)){
+          
+          //PASSANT
+          Moves prev;
+          if(playerTurn == 0){
+            if(playerList.get(playerList.size()-1).canPassant){
+              prev = playerList.get(playerList.size()-1).getPreviousMove();
+              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1){
+                this.ForcedTake(prev.p);
+                if(side == Team.WHITE){
+                  this.ForcedMove(row+1, collumn);
+                }
+                else{
+                  this.ForcedMove(row-1,collumn);
+                }
+                hasMoved = true;
+                System.out.println(name + " takes " + other.name);
+                // Switch Turns
+                playerTurn = (playerTurn + 1) % numPlayers;
+                playerList.get(playerTurn).canPassant = false;
+                return;
+              }
+            }
+          }
+          else{
+            if(playerList.get(playerTurn-1).canPassant){
+              prev = playerList.get(playerTurn-1).getPreviousMove();
+              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1){
+                this.ForcedTake(prev.p);
+                if(side == Team.WHITE){
+                  this.ForcedMove(row+1, collumn);
+                }
+                else{
+                  this.ForcedMove(row-1,collumn);
+                }
+                hasMoved = true;
+                System.out.println(name + " takes " + other.name);
+                // Switch Turns
+                playerTurn = (playerTurn + 1) % numPlayers;
+                playerList.get(playerTurn).canPassant = false;
+                return;
+              }
+          }
+          }
+          
+          
+          
+          
+          
+          
             other.taken = true;
             board.grid[row][collumn].removePiece();
+            board.grid[row][collumn].occupied = false;
             row = other.row;
             collumn = other.collumn;
             board.grid[row][collumn].addPiece(this);
@@ -310,6 +392,7 @@ class Pawn extends ChessPiece{
             System.out.println(name + " takes " + other.name);
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot Take " + other.name);
@@ -336,18 +419,56 @@ class Pawn extends ChessPiece{
                 if((row == other.row-1) && ((abs(calc) == 1) && !pinned(other.row,other.collumn,pieces))){
                     return true;
                 }
-                else return false;
+                //else return false;
             }
             else{
                 if((row == other.row+1) && ((abs(calc) == 1) && !pinned(other.row,other.collumn,pieces))){
                     return true;
                     }
-                else return false;
+                //else return false;
             }
         }
-        else{
-           return false;
-        }        
+        
+// En Passant TODO:: Is Pinned problems might arise, maybe passent exclusive is pinned? rip
+        
+          Moves prev;
+          if(playerTurn == 0){
+            if(playerList.get(playerList.size()-1).canPassant){
+              prev = playerList.get(playerList.size()-1).getPreviousMove();
+              if(prev != null && prev.p.piece == Type.PAWN && prev.p == other && abs(prev.collumn - collumn) == 1){
+                // This is a sloppy way of forcing passant ina specific location
+                if(side == Team.WHITE){
+                  if(row == 4){
+                    return true;
+                  }
+                }
+                else{
+                  if(row == 3){
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+          else{
+            if(playerList.get(playerTurn-1).canPassant){
+              prev = playerList.get(playerTurn-1).getPreviousMove();
+              if(prev != null && prev.p.piece == Type.PAWN && prev.p == other && abs(prev.collumn - collumn) == 1){
+                if(side == Team.WHITE){
+                  if(row == 4){
+                    return true;
+                  }
+                }
+                else{
+                  if(row == 3){
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        
+        return false;
     }
 
 
@@ -432,7 +553,7 @@ class King extends ChessPiece{
                 ChessPiece rook = pieces.get(i);
                 if(!rook.taken && rook.side == side && rook.piece == Type.ROOK){
                     if(!rook.hasMoved){
-                        if(rook.row == row){ //<>//
+                        if(rook.row == row){ //<>// //<>//
                             if(rook.collumn < collumn){
                                 for(int j = collumn-1; j > rook.collumn && correctRook; j--){
                                     if(board.grid[row][j].occupied){
@@ -452,8 +573,8 @@ class King extends ChessPiece{
                             }
                             else{
                                 correctRook = true;
-                                for(int k = collumn+1; k < rook.collumn && correctRook; k++){ //<>//
-                                    if(board.grid[row][k].occupied){ //<>//
+                                for(int k = collumn+1; k < rook.collumn && correctRook; k++){ //<>// //<>//
+                                    if(board.grid[row][k].occupied){ //<>// //<>//
                                         correctRook = false;
                                     }
                                     int tempRow = row;
@@ -486,7 +607,7 @@ class King extends ChessPiece{
             //Castleing Detection
             int diffy = y-collumn;
             if(diffy > 1){
-                for(int i = collumn; i < board.gridSizeY; i++){ //<>//
+                for(int i = collumn; i < board.gridSizeY; i++){ //<>// //<>//
                     ChessPiece rook = board.grid[row][i].getLivePiece();
                     if(rook != null && rook.piece == Type.ROOK){
                         rook.ForcedMove(row,collumn+1);
@@ -521,6 +642,7 @@ class King extends ChessPiece{
             System.out.println(name + " to " + this.GetChessPos());
             // Switch turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot move");
@@ -539,6 +661,7 @@ class King extends ChessPiece{
             System.out.println(name + " takes " + other.name);
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot Take " + other.name);
@@ -1168,6 +1291,7 @@ class Rook extends ChessPiece{
             System.out.println(name + " to " + this.GetChessPos());
             // Switch turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot move");
@@ -1189,6 +1313,7 @@ class Rook extends ChessPiece{
             System.out.println(name + " takes " + other.name);
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
+            playerList.get(playerTurn).canPassant = false;
         }
         else{
             System.out.println("Cannot Take " + other.name);
