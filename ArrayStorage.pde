@@ -1,13 +1,13 @@
-class ShapeAndPiece{
+class ShapeAndType{
   
   
-  ShapeAndPiece(PShape shape, ChessPiece piece){
+  ShapeAndType(PShape shape, Type piece){
     s = shape;
     p = piece;
   }
   
   
-  ChessPiece GetPiece(){
+  Type GetPiece(){
     return p;
   }
   
@@ -17,7 +17,7 @@ class ShapeAndPiece{
   
   
   
-  void setPiece(ChessPiece piece){
+  void setPiece(Type piece){
     p = piece;
     
   }
@@ -27,7 +27,7 @@ class ShapeAndPiece{
   }
   
   PShape s;
-  ChessPiece p;
+  Type p;
 
 
 }

@@ -169,6 +169,21 @@ class GreedyAI extends RandomAI{
         else System.out.println("No Legal Moves Left");
         return null;
     }
+    
+
+
+class BigBrainAI extends GreedyAI{
+  
+  
+  BigBrainAI(Board board1, Team side1){
+    super(board1,side1);
+  }
+  
+  
+  void simulateForward(){
+    
+  }
+}
 
 
 

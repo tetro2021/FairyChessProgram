@@ -14,7 +14,7 @@ PVector drawlocation;
 // Players & gamemode
 int numPlayers = 2;
 ArrayList<Player> playerList;
-int gameMode = 0;
+int gameMode = 2;
 RandomAI eloOf1;
 GreedyAI eloOf20;
 
@@ -25,7 +25,7 @@ int selectRow;
 int selectCollumn;
 Cell curentCell = null;
 int playerTurn = 0;
-boolean promotionAvailable = true;
+boolean promotionAvailable = false;
 
 
 
@@ -37,8 +37,8 @@ int size = 100;
 
 Board board;
 ArrayList<ChessPiece> pieces;
-ArrayList<PShape> shapelist;
-//ArrayList<ShapeAndPiece> shapelist;
+//ArrayList<PShape> shapelist;
+ArrayList<ShapeAndType> shapelist;
 PShape bishop;
 PShape king;
 PShape knight;
@@ -105,7 +105,7 @@ void setup(){
     Player p1 = new Player(Team.WHITE);
     Player p2 = new Player(Team.BLACK);
     System.out.println(p1.side);
-    playerList.add(p1); //<>//
+    playerList.add(p1);
     playerList.add(p2);
   }
 
@@ -118,19 +118,25 @@ void setup(){
 
 
 void loadPieces(){
-  shapelist = new ArrayList<PShape>();
+  shapelist = new ArrayList<ShapeAndType>();
   bishop = loadShape("bishop.svg");
-  shapelist.add(bishop);
+  ShapeAndType bShape = new ShapeAndType(bishop,Type.BISHOP);
+  shapelist.add(bShape);
   king = loadShape("king.svg");
-  shapelist.add(king);
+  ShapeAndType kShape = new ShapeAndType(king,Type.KING);
+  shapelist.add(kShape);
   knight = loadShape("knight.svg");
-  shapelist.add(knight);
+  ShapeAndType knShape = new ShapeAndType(knight,Type.KNIGHT);
+  shapelist.add(knShape);
   pawn = loadShape("pawn.svg");
-  shapelist.add(pawn);
+  ShapeAndType pShape = new ShapeAndType(pawn,Type.PAWN);
+  shapelist.add(pShape);
   queen = loadShape("queen.svg");
-  shapelist.add(queen);
+  ShapeAndType qShape = new ShapeAndType(queen,Type.QUEEN);
+  shapelist.add(qShape);
   rook = loadShape("rook.svg");
-  shapelist.add(rook);
+  ShapeAndType rShape = new ShapeAndType(rook,Type.ROOK);
+  shapelist.add(rShape);
   
   
   
@@ -276,6 +282,30 @@ void keyReleased()
 
 
 void mouseClicked(){
+  
+    if(promotionAvailable){
+    
+    Type promotion = SelectNewPiece();
+    if(promotion != null){
+      System.out.println("TYPE: " + promotion);
+      //generateNewPiece(promotion).promote(playerList.get(playerTurn).getPreviousMove().p);
+      System.out.println(playerList.get(playerTurn).getPreviousMove().p);
+      if(playerTurn == 0){
+        generateNewPiece(promotion).promote(playerList.get(playerList.size()-1).getPreviousMove().p);
+        promotionAvailable = false;        
+      }
+      else{
+        generateNewPiece(promotion).promote(playerList.get(playerTurn-1).getPreviousMove().p);
+        promotionAvailable = false;      
+      }
+    }
+    else{
+      return;
+    }
+    
+  }
+  
+  
   if(gameMode == 0){
     TwoPlayerClick();
   }
@@ -285,14 +315,45 @@ void mouseClicked(){
   else if(gameMode == 2){
     vsGreedy();
   }
-  
-  if(promotionAvailable){
-    
-    SelectNewPiece();
-    
-  }
-  
+   
 }
+
+
+
+
+ChessPiece generateNewPiece(Type t){
+                      switch(t){
+                        case PAWN:
+                            return new Pawn(board,Team.WHITE, pawn);
+                            //break;
+                        case KING:
+                            return new King(board,Team.WHITE, king);
+                            //break;
+                        case KNIGHT:
+                            return new Knight(board,Team.WHITE, knight);
+                            //break;
+                        case ROOK:
+                            return new Rook(board,Team.WHITE, rook);
+                            //break;
+                        case QUEEN:
+                            return new Queen(board,Team.WHITE, queen);
+                            //break;
+                        case BISHOP:
+                            return new Bishop(board,Team.WHITE, bishop);
+                            //break;
+                        default:
+                            return new ChessPiece(board,Team.WHITE,pawn);
+                            //break;                            
+                    }
+}
+
+
+
+
+
+
+
+
 
 
 void selectCell(){
@@ -361,9 +422,9 @@ void loadBoard(){
 
 
 
-void selfStyle(ArrayList<PShape> shapes){
+void selfStyle(ArrayList<ShapeAndType> shapes){
   for(int i = 0; i < shapes.size(); i++){
-    shapes.get(i).disableStyle();
+    shapes.get(i).GetShape().disableStyle();
     //shapes.get(i).setFill(100);
   }
 }
@@ -414,7 +475,7 @@ void AskPromotion(){
     int y = 0;
     int x = 0;
     for(int i = 0; i < shapelist.size(); i++){
-      shape(shapelist.get(i),100+100*x,150+100*y,size,size);
+      shape(shapelist.get(i).GetShape(),100+100*x,150+100*y,size,size);
       x++;
       if(x % 4 == 0){
         y++;
@@ -430,13 +491,13 @@ void AskPromotion(){
 
 
 
-PShape SelectNewPiece(){
+Type SelectNewPiece(){
   int x =0;
   int y = 0;
-  PShape temp = null;
+  Type temp = null;
   for(int i = 0; i < shapelist.size(); i++){
     if( mouseX >= (100 + 100*x) && mouseX < (100+100*x)+size && mouseY >= (150+100*y) && mouseY < (150+100*y)+size)   
-    temp = shapelist.get(i);
+    temp = shapelist.get(i).GetPiece();
     x++;
     if(x % 4 == 0){
       y++;
@@ -445,7 +506,7 @@ PShape SelectNewPiece(){
   }
   if(temp == null){
     System.out.println("cant find?");
-    System.out.println(mouseX + " " + (100 + 100*x));
+    //System.out.println(mouseX + " " + (100 + 100*x));
     return temp;
   }
   return temp;

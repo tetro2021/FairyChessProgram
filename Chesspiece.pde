@@ -30,6 +30,18 @@ class ChessPiece{
         board.grid[row][collumn].addPiece(this);
         piece = Type.UNKOWN;
     }
+    
+    // For promotion only!
+    ChessPiece(Board b, Team c,PShape t){
+        board = b;
+        side = c;
+        type = t;
+        taken = false;
+        row = -1;
+        collumn = -1;
+        //type = pawn;
+        piece = Type.UNKOWN;
+    }
 
     ChessPiece(Board b, Team c, Boolean istaken, int x, int y, PShape t){
         board = b;
@@ -229,6 +241,8 @@ class ChessPiece{
     void promote(ChessPiece old){
       row = old.row;
       collumn = old.collumn;
+      side = old.side;
+      hasMoved = old.hasMoved;
       board.grid[row][collumn].removePiece();
       board.grid[row][collumn].addPiece(this);
       pieces.remove(old);
@@ -270,6 +284,13 @@ class Pawn extends ChessPiece{
         piece = Type.PAWN;
         name = "pawn";
         hasMoved = false;
+        }
+        
+    Pawn(Board b, Team c, PShape t){
+        super(b,c,t);
+        piece = Type.PAWN;
+        name = "pawn";
+        //hasMoved = false;
         }
 
     Pawn(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
@@ -321,6 +342,19 @@ class Pawn extends ChessPiece{
             collumn = y;
             hasMoved = true;
             System.out.println(name + " to " + this.GetChessPos());
+            
+            
+            //Check for Promotion
+            if(side == Team.WHITE && row == board.gridSizeX-1){
+              promotionAvailable = true;  
+            }
+            else if(row == 0){
+              promotionAvailable = true;
+            }
+            
+            
+            
+            
             // Switch turns
             playerTurn = (playerTurn + 1) % numPlayers;
             playerList.get(playerTurn).canPassant = false;
@@ -339,7 +373,7 @@ class Pawn extends ChessPiece{
           if(playerTurn == 0){
             if(playerList.get(playerList.size()-1).canPassant){
               prev = playerList.get(playerList.size()-1).getPreviousMove();
-              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1){
+              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1 && prev.row - row == 0){
                 this.ForcedTake(prev.p);
                 if(side == Team.WHITE){
                   this.ForcedMove(row+1, collumn);
@@ -348,7 +382,7 @@ class Pawn extends ChessPiece{
                   this.ForcedMove(row-1,collumn);
                 }
                 hasMoved = true;
-                System.out.println(name + " takes " + other.name);
+                System.out.println(name + " En Passant " + other.name);
                 // Switch Turns
                 playerTurn = (playerTurn + 1) % numPlayers;
                 playerList.get(playerTurn).canPassant = false;
@@ -359,7 +393,7 @@ class Pawn extends ChessPiece{
           else{
             if(playerList.get(playerTurn-1).canPassant){
               prev = playerList.get(playerTurn-1).getPreviousMove();
-              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1){
+              if(prev != null && prev.p == other && abs(prev.collumn - collumn) == 1 && prev.row - row == 0){
                 this.ForcedTake(prev.p);
                 if(side == Team.WHITE){
                   this.ForcedMove(row+1, collumn);
@@ -368,7 +402,7 @@ class Pawn extends ChessPiece{
                   this.ForcedMove(row-1,collumn);
                 }
                 hasMoved = true;
-                System.out.println(name + " takes " + other.name);
+                System.out.println(name + " En Passant " + other.name);
                 // Switch Turns
                 playerTurn = (playerTurn + 1) % numPlayers;
                 playerList.get(playerTurn).canPassant = false;
@@ -390,6 +424,18 @@ class Pawn extends ChessPiece{
             board.grid[row][collumn].addPiece(this);
             hasMoved = true;
             System.out.println(name + " takes " + other.name);
+            
+            //Promotion Check
+            
+            if(side == Team.WHITE && row == board.gridSizeX-1){
+              promotionAvailable = true;  
+            }
+            else if(row == 0){
+              promotionAvailable = true;
+            }
+            
+            
+            
             // Switch Turns
             playerTurn = (playerTurn + 1) % numPlayers;
             playerList.get(playerTurn).canPassant = false;
@@ -429,14 +475,14 @@ class Pawn extends ChessPiece{
             }
         }
         
-// En Passant TODO:: Is Pinned problems might arise, maybe passent exclusive is pinned? rip
+// En Passant TODO:: Is Pinned problems might arise, maybe passent exclusive is pinned? Might need this once new pieces are introduced
         
           Moves prev;
           if(playerTurn == 0){
             if(playerList.get(playerList.size()-1).canPassant){
               prev = playerList.get(playerList.size()-1).getPreviousMove();
               if(prev != null && prev.p.piece == Type.PAWN && prev.p == other && abs(prev.collumn - collumn) == 1){
-                // This is a sloppy way of forcing passant ina specific location
+                // This is a sloppy way of forcing passant in a specific location
                 if(side == Team.WHITE){
                   if(row == 4){
                     return true;
@@ -525,6 +571,14 @@ class King extends ChessPiece{
         hasMoved = false;
         }
 
+    King(Board b, Team c,PShape t){
+        super(b,c,t);
+        piece = Type.KING;
+        name = "King";
+        //hasMoved = false;
+        }
+
+
     King(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
         super(b,c,istaken,x,y,t);
         piece = Type.KING;
@@ -547,25 +601,27 @@ class King extends ChessPiece{
         }
 
             // Castling, makes me wonder if I should create two separate arrrays holding individual teams, more memory but better speed
-        if(!hasMoved){
+        if(!hasMoved && (x-row) == 0){
             boolean correctRook = true;
             for(int i = 0; i < pieces.size(); i++){
                 ChessPiece rook = pieces.get(i);
-                if(!rook.taken && rook.side == side && rook.piece == Type.ROOK){
+                if(!rook.taken && rook.side == side && rook.piece == Type.ROOK && rook.row == row){
                     if(!rook.hasMoved){
-                        if(rook.row == row){ //<>// //<>//
+                        if(rook.row == row){
                             if(rook.collumn < collumn){
                                 for(int j = collumn-1; j > rook.collumn && correctRook; j--){
                                     if(board.grid[row][j].occupied){
                                         correctRook = false;
                                     }
-                                    int tempRow = row;
-                                    int tempCol = collumn;
-                                    this.ForcedMove(row,j);
-                                    if(this.IsChecked(pieces)){
+                                    if(correctRook){
+                                      int tempRow = row;
+                                      int tempCol = collumn;
+                                      this.ForcedMove(row,j);
+                                      if(this.IsChecked(pieces)){
                                         correctRook = false;
-                                    }
-                                    this.ForcedMove(tempRow,tempCol);
+                                      }
+                                      this.ForcedMove(tempRow,tempCol);
+                                    }                                 
                                 }
                                 if(correctRook){
                                   return true;
@@ -573,17 +629,20 @@ class King extends ChessPiece{
                             }
                             else{
                                 correctRook = true;
-                                for(int k = collumn+1; k < rook.collumn && correctRook; k++){ //<>// //<>//
-                                    if(board.grid[row][k].occupied){ //<>// //<>//
+                                for(int k = collumn+1; k < rook.collumn && correctRook; k++){
+                                    if(board.grid[row][k].occupied){
                                         correctRook = false;
                                     }
-                                    int tempRow = row;
-                                    int tempCol = collumn;
-                                    this.ForcedMove(row,k);
-                                    if(this.IsChecked(pieces)){
+                                    
+                                    if(correctRook){
+                                      int tempRow = row;
+                                      int tempCol = collumn;
+                                      this.ForcedMove(row,k);
+                                      if(this.IsChecked(pieces)){
                                         correctRook = false;
+                                      }
+                                      this.ForcedMove(tempRow,tempCol);
                                     }
-                                    this.ForcedMove(tempRow,tempCol);
                                 }
                                 if(correctRook){
                                   return true;
@@ -607,7 +666,7 @@ class King extends ChessPiece{
             //Castleing Detection
             int diffy = y-collumn;
             if(diffy > 1){
-                for(int i = collumn; i < board.gridSizeY; i++){ //<>// //<>//
+                for(int i = collumn; i < board.gridSizeY; i++){
                     ChessPiece rook = board.grid[row][i].getLivePiece();
                     if(rook != null && rook.piece == Type.ROOK){
                         rook.ForcedMove(row,collumn+1);
@@ -724,10 +783,18 @@ class Bishop extends ChessPiece{
 
     Bishop(Board b){
         super(b);
-        piece = Type.PAWN;
+        piece = Type.BISHOP;
         name = "Bishop";
         hasMoved = false;
         }
+        
+        
+    Bishop(Board b, Team c, PShape t){
+        super(b,c,t);
+        piece = Type.BISHOP;
+        name = "Bishop";
+        hasMoved = false;
+        }        
 
     Bishop(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
         super(b,c,istaken,x,y,t);
@@ -948,9 +1015,20 @@ class Queen extends ChessPiece{
     Queen(Board b){
         super(b);
         piece = Type.QUEEN;
-        name = "Wueen";
+        name = "Queen";
         hasMoved = false;
         }
+
+
+    Queen(Board b, Team c, PShape t){
+        super(b,c,t);
+        piece = Type.QUEEN;
+        name = "Queen";
+        //hasMoved = false;
+        }
+
+
+
 
     Queen(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
         super(b,c,istaken,x,y,t);
@@ -1225,6 +1303,15 @@ class Rook extends ChessPiece{
         hasMoved = false;
         }
 
+
+    Rook(Board b, Team c, PShape t){
+        super(b,c,t);
+        piece = Type.ROOK;
+        name = "Rook";
+        //hasMoved = false;
+        }
+
+
     Rook(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
         super(b,c,istaken,x,y,t);
         piece = Type.ROOK;
@@ -1453,6 +1540,16 @@ class Knight extends ChessPiece{
         name = "Knight";
         hasMoved = false;
         }
+
+        
+    Knight(Board b, Team c, PShape t){
+        super(b,c,t);
+        piece = Type.KNIGHT;
+        name = "Knight";
+        hasMoved = false;
+        }        
+        
+        
 
     Knight(Board b, Team c, Boolean istaken, Boolean hasMoved, int x, int y, PShape t){
         super(b,c,istaken,x,y,t);
